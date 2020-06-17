@@ -43,8 +43,15 @@ def a():
             break
 
 
-labels = []
-for name in os.listdir('Dataset'):
-    labels.append(name)
-data = [[]]
-a()
+def load_dataset(path):
+    labels = []
+    data = []
+    for name in os.listdir(path):
+        for file in os.listdir(f"{path}/{name}"):
+            img = cv2.imread(f"{path}/{name}/{file}")
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            labels.append(name)
+            data.append(gray)
+    return data, labels
+
+data, labels = load_dataset('Dataset')
