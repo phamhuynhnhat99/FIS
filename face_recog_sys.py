@@ -1,10 +1,24 @@
 import os
 import warnings
-
 import cv2
 import dlib
 
+from skimage.feature import hog
+from sklearn import svm
+from sklearn.metrics import classification_report,accuracy_score
+
+
 warnings.filterwarnings('ignore')
+
+
+# global value
+path = 'Dataset/'
+ppc = 8  # pixels per cell
+cpb = 2  # cell per block
+hog_images = []
+hog_features = []
+labels = []
+data = []
 
 
 def bb_coord(face):
@@ -20,8 +34,8 @@ def add_faces(n_faces):
         os.mkdir('Dataset')
     hog = dlib.get_frontal_face_detector()
     cap = cv2.VideoCapture(0)  # ith webcam
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 800)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
     count = 0
     flag = True
     name = None
@@ -80,8 +94,15 @@ def load_dataset(path):
 
 
 def train():
+    data, labels = load_dataset(path)
     pass
 
 
-name = add_faces(10)
-print(f"{name} has added faces to the Dataset")
+def main():
+    name = add_faces(10)
+    print(f"{name} has added faces to the Dataset")
+
+
+
+if __name__ == '__main__':
+    main()
