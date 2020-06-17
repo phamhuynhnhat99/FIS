@@ -1,12 +1,14 @@
 import os
-# import pickle
+import pickle
 import warnings
-import numpy as np
+
 import cv2
 import dlib
+import numpy as np
 from skimage.feature import hog
 from sklearn import svm
-import argparse
+
+# import argparse
 
 # from sklearn.metrics import classification_report, accuracy_score
 
@@ -16,7 +18,6 @@ warnings.filterwarnings('ignore')
 dirname = "Dataset"
 ppc = (8, 8)  # pixels per cell
 cpb = (2, 2)  # cell per block
-
 
 
 def bb_coord(face):
@@ -102,11 +103,30 @@ def feature_descriptor(data):
 def train(data_fd, labels):
     clf = svm.SVC()
     clf.fit(data_fd, labels)
+    return clf
+
+
+def save_model(model, name):
+    if not os.path.isdir("Model"):
+        os.mkdir("Model")
+    path = f"Model/{name}.sav"
+    if os.path.exists(path):
+        os.remove(path)
+    pickle.dump(model, open(path, 'wb'))
+    print(f"Model has added {name}")
+
+
+def load_model(path):
+    if os.path.exists(path):
+        model = pickle.load(open(path, 'rb'))
+        return model
+    print("Model not found")
+    return None
 
 
 def main():
-    #name = add_faces(10, dirname)
-    #print(f"{name} has added faces to the {dirname}")
+    # name = add_faces(10, dirname)
+    # print(f"{name} has added faces to the {dirname}")
     data, labels = load_dataset(dirname)
     data_fd = feature_descriptor(data)
     train(data_fd, np.array(labels))
