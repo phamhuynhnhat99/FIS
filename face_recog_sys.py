@@ -32,7 +32,8 @@ def add_faces(n_faces):
         if len(bounding_box) == 1:
             left, top, right, bottom = bb_coord(bounding_box[0])
             cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 3)
-        cv2.imshow("Webcam", frame)
+        flip_frame = cv2.flip(frame, 1)
+        cv2.imshow("Webcam", flip_frame)
         key = cv2.waitKey(1)
         if key % 256 == 27:
             if os.path.isdir(f"Dataset/{name}"):
