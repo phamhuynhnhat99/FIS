@@ -1,18 +1,13 @@
 import os
 import warnings
+
 import cv2
 import dlib
 
-from skimage.feature import hog
-from sklearn import svm
-from sklearn.metrics import classification_report,accuracy_score
-
-
 warnings.filterwarnings('ignore')
 
-
 # global value
-path = 'Dataset/'
+path = 'Dataset'
 ppc = 8  # pixels per cell
 cpb = 2  # cell per block
 hog_images = []
@@ -29,9 +24,9 @@ def bb_coord(face):
     return left, top, right, bottom
 
 
-def add_faces(n_faces):
-    if not os.path.isdir('Dataset'):
-        os.mkdir('Dataset')
+def add_faces(n_faces, dirname):
+    if not os.path.isdir(dirname):
+        os.mkdir(dirname)
     hog = dlib.get_frontal_face_detector()
     cap = cv2.VideoCapture(0)  # ith webcam
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
@@ -54,10 +49,10 @@ def add_faces(n_faces):
 
         key = cv2.waitKey(1)
         if key % 256 == 27:  # escape pressed
-            if os.path.isdir(f"Dataset/{name}"):
-                for file in os.listdir(f"Dataset/{name}"):
-                    os.remove(f"Dataset/{name}/{file}")
-                os.removedirs(f"Dataset/{name}")
+            if os.path.isdir(f"{dirname}/{name}"):
+                for file in os.listdir(f"{dirname}/{name}"):
+                    os.remove(f"{dirname}/{name}/{file}")
+                os.removedirs(f"{dirname}/{name}")
             return 'No one'
         if key % 256 == 32:  # space pressed
             if len(bounding_box) == 1:
@@ -65,14 +60,14 @@ def add_faces(n_faces):
                 while flag:
                     print("Enter your name: ")
                     name = input()
-                    if os.path.isdir(f"Dataset/{name}"):
+                    if os.path.isdir(f"{dirname}/{name}"):
                         print("Already exist")
                     else:
-                        os.mkdir(f"Dataset/{name}")
+                        os.mkdir(f"{dirname}/{name}")
                         flag = False
                 crop = gray[top:bottom, left:right]
                 resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
-                cv2.imwrite(f"Dataset/{name}/{count}.jpg", resized)
+                cv2.imwrite(f"{dirname}/{name}/{count}.jpg", resized)
                 count += 1
             else:
                 print("Only 1 face per time")
@@ -99,9 +94,10 @@ def train():
 
 
 def main():
-    name = add_faces(10)
-    print(f"{name} has added faces to the Dataset")
-
+    print('aaaaaaa')
+    dirname = "Dataset"
+    name = add_faces(10, dirname)
+    print(f"{name} has added faces to the {dirname}")
 
 
 if __name__ == '__main__':
