@@ -32,10 +32,14 @@ def add_faces(n_faces):
         if len(bounding_box) == 1:
             left, top, right, bottom = bb_coord(bounding_box[0])
             cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 3)
+
         flip_frame = cv2.flip(frame, 1)
+        cv2.putText(flip_frame, str(count), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 255, 255))
         cv2.imshow("Webcam", flip_frame)
+
         key = cv2.waitKey(1)
-        if key % 256 == 27:
+        if key % 256 == 27:  # escape pressed
             if os.path.isdir(f"Dataset/{name}"):
                 for file in os.listdir(f"Dataset/{name}"):
                     os.remove(f"Dataset/{name}/{file}")
@@ -53,8 +57,6 @@ def add_faces(n_faces):
                         os.mkdir(f"Dataset/{name}")
                         flag = False
                 crop = gray[top:bottom, left:right]
-                # cv2.putText(frame, count+1, (bounding_box[0].top(), bounding_box[0].left()), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255))
-                print(count + 1)
                 resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
                 cv2.imwrite(f"Dataset/{name}/{count}.jpg", resized)
                 count += 1
