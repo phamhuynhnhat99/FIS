@@ -1,13 +1,17 @@
 import os
 import warnings
-
 import cv2
 import dlib
+import pickle
+
+from skimage.feature import hog
+from sklearn import svm
+from sklearn.metrics import classification_report, accuracy_score
 
 warnings.filterwarnings('ignore')
 
 # global value
-path = 'Dataset'
+dirname = "Dataset"
 ppc = 8  # pixels per cell
 cpb = 2  # cell per block
 hog_images = []
@@ -88,16 +92,21 @@ def load_dataset(path):
     return data, labels
 
 
-def train():
-    data, labels = load_dataset(path)
-    pass
+def feature_descriptor(data):
+    tmp = data
+    return tmp
+
+
+def train(data, labels):
+    clf = svm()
+    clf.fit(data, labels)
 
 
 def main():
-    print('aaaaaaa')
-    dirname = "Dataset"
     name = add_faces(10, dirname)
     print(f"{name} has added faces to the {dirname}")
+    data, labels = load_dataset(dirname)
+    train(data, labels)
 
 
 if __name__ == '__main__':
