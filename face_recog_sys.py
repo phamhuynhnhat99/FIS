@@ -1,23 +1,22 @@
 import os
+# import pickle
 import warnings
+import numpy as np
 import cv2
 import dlib
-import pickle
-
 from skimage.feature import hog
 from sklearn import svm
-from sklearn.metrics import classification_report, accuracy_score
+import argparse
+
+# from sklearn.metrics import classification_report, accuracy_score
 
 warnings.filterwarnings('ignore')
 
 # global value
 dirname = "Dataset"
-ppc = 8  # pixels per cell
-cpb = 2  # cell per block
-hog_images = []
-hog_features = []
-labels = []
-data = []
+ppc = (8, 8)  # pixels per cell
+cpb = (2, 2)  # cell per block
+
 
 
 def bb_coord(face):
@@ -93,21 +92,24 @@ def load_dataset(path):
 
 
 def feature_descriptor(data):
-    tmp = data
-    # do sth
-    return tmp
+    features = []
+    for img in data:
+        fd = hog(img, orientations=9, pixels_per_cell=ppc, cells_per_block=cpb, visualize=False, multichannel=False)
+        features.append(fd)
+    return np.array(features)
 
 
-def train(data, labels):
-    clf = svm()
-    clf.fit(data, labels)
+def train(data_fd, labels):
+    clf = svm.SVC()
+    clf.fit(data_fd, labels)
 
 
 def main():
-    name = add_faces(10, dirname)
-    print(f"{name} has added faces to the {dirname}")
+    #name = add_faces(10, dirname)
+    #print(f"{name} has added faces to the {dirname}")
     data, labels = load_dataset(dirname)
-    train(data, labels)
+    data_fd = feature_descriptor(data)
+    train(data_fd, np.array(labels))
 
 
 if __name__ == '__main__':
