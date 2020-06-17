@@ -64,16 +64,16 @@ def add_faces(n_faces):
     return name
 
 
-def load_dataset():
+def load_dataset(path):
     labels = []
     data = []
-    for name in os.listdir('Dataset'):
-        for file in os.listdir(f"Dataset/{name}"):
+    for name in os.listdir(path):
+        for file in os.listdir(f"{path}/{name}"):
             img = cv2.imread(file)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             labels.append(name)
             data.append(img)
-
+    return data,labels
 
 def train():
     pass
