@@ -8,14 +8,18 @@ import numpy as np
 from skimage.feature import hog
 from sklearn import svm
 
-# import argparse
+import argparse
+
+parser = argparse.ArgumentParser(description='FIS')
+parser.add_argument('--type', type=int, default=0, help='0: FIS, 1: add a new guy and retrain')
+parser.add_argument('--name', type=str, default='Anonymous', help='name of new guy')
+args = parser.parse_args()
 
 # from sklearn.metrics import classification_report, accuracy_score
 
 warnings.filterwarnings('ignore')
 
 # global value
-dirname = "Dataset"
 ppc = (8, 8)  # pixels per cell
 cpb = (2, 2)  # cell per block
 
@@ -36,8 +40,16 @@ def add_faces(n_faces, dirname):
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
     count = 0
-    flag = True
-    name = None
+
+    name = args.name
+    if len(name) == 0:
+        name = 'Anonymous'
+    tmp = 0
+    while os.path.isdir(f"{dirname}/{name}" + '_' + str(tmp)):
+        tmp += 1
+    name = name + '_' + str(tmp)
+    os.mkdir(f"{dirname}/{name}")
+
     while count < n_faces:
         ret, frame = cap.read()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -61,14 +73,7 @@ def add_faces(n_faces, dirname):
         if key % 256 == 32:  # space pressed
             if len(bounding_box) == 1:
                 left, top, right, bottom = bb_coord(bounding_box[0])
-                while flag:
-                    print("Enter your name: ")
-                    name = input()
-                    if os.path.isdir(f"{dirname}/{name}"):
-                        print("Already exist")
-                    else:
-                        os.mkdir(f"{dirname}/{name}")
-                        flag = False
+
                 crop = gray[top:bottom, left:right]
                 resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
                 cv2.imwrite(f"{dirname}/{name}/{count}.jpg", resized)
@@ -78,6 +83,53 @@ def add_faces(n_faces, dirname):
     cap.release()
     cv2.destroyAllWindows()
     return name
+
+
+def FIS(clf):
+    hog = dlib.get_frontal_face_detector()
+    cap = cv2.VideoCapture(0)  # ith webcam
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
+    result = None
+
+    while True:
+        ret, frame = cap.read()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        bounding_box = hog(gray, 0)
+
+        flip_frame = cv2.flip(frame, 1)
+        for ind, box in enumerate(bounding_box):
+            left, top, right, bottom = bb_coord(box)
+            cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 2)
+
+            crop = gray[top:bottom, left:right]
+            resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
+
+            fd_resize = hog(resized, orientations=9, pixels_per_cell=ppc, cells_per_block=cpb, visualize=False,
+                            multichannel=False)
+            fd_resize = np.array(fd_resize)
+            label = clf.predict(fd_resize)
+            print(type(label))
+            print(label)
+
+            # cv2.putText(flip_frame, label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
+            #             (0, 255, 255))
+        cv2.imshow("Facial Identification System", flip_frame)
+        
+        key = cv2.waitKey(1)
+        if key % 256 == 32:
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+def load_model(path):
+    if os.path.exists(path):
+        model = pickle.load(open(path, 'rb'))
+        return model
+    print("Model not found")
+    return None
 
 
 def load_dataset(path):
@@ -116,20 +168,18 @@ def save_model(model, name):
     print(f"Model has added {name}")
 
 
-def load_model(path):
-    if os.path.exists(path):
-        model = pickle.load(open(path, 'rb'))
-        return model
-    print("Model not found")
-    return None
-
-
 def main():
-    # name = add_faces(10, dirname)
-    # print(f"{name} has added faces to the {dirname}")
-    data, labels = load_dataset(dirname)
-    data_fd = feature_descriptor(data)
-    train(data_fd, np.array(labels))
+    if args.type == 0:  # test
+        clf = load_model('Model/FIS.sav')
+        FIS(clf)
+    else:  # add a new guy and retrain
+        dirname = 'Dataset'
+        add_faces(10, dirname)
+        # retrain
+        data, labels = load_dataset(dirname)
+        data_fd = feature_descriptor(data)
+        clf = train(data_fd, np.array(labels))
+        save_model(clf, 'FIS')
 
 
 if __name__ == '__main__':
