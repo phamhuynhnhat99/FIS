@@ -2,6 +2,7 @@
   <dictionary name="MSI">
     <words>
       <w>dataset</w>
+      <w>dirname</w>
       <w>webcam</w>
     </words>
   </dictionary>

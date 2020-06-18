@@ -21,6 +21,8 @@ warnings.filterwarnings('ignore')
 # global value
 ppc = (8, 8)  # pixels per cell
 cpb = (2, 2)  # cell per block
+width = 800
+height = 800
 
 
 def bb_coord(face):
@@ -36,17 +38,20 @@ def add_faces(n_faces, dirname):
         os.mkdir(dirname)
     hog = dlib.get_frontal_face_detector()
     cap = cv2.VideoCapture(0)  # ith webcam
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     count = 0
 
     name = args.name
     if len(name) == 0:
         name = 'Anonymous'
-    tmp = 0
-    while os.path.isdir(f"{dirname}/{name}" + '_' + str(tmp)):
-        tmp += 1
-    name = name + '_' + str(tmp)
+    else:
+        name = name.replace('_', ' ')
+    if os.path.isdir(f"{dirname}/{name}"):
+        tmp = 1
+        while os.path.isdir(f"{dirname}/{name}" + '_' + str(tmp)):
+            tmp += 1
+        name = name + '_' + str(tmp)
     os.mkdir(f"{dirname}/{name}")
 
     while count < n_faces:
@@ -60,7 +65,7 @@ def add_faces(n_faces, dirname):
         flip_frame = cv2.flip(frame, 1)
         cv2.putText(flip_frame, str(count), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
                     (0, 255, 255))
-        cv2.imshow("Webcam", flip_frame)
+        cv2.imshow(dirname, flip_frame)
 
         key = cv2.waitKey(1)
         if key % 256 == 27:  # escape pressed
@@ -72,13 +77,21 @@ def add_faces(n_faces, dirname):
         if key % 256 == 32:  # space pressed
             if len(bounding_box) == 1:
                 left, top, right, bottom = bb_coord(bounding_box[0])
-
                 crop = gray[top:bottom, left:right]
                 resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
                 cv2.imwrite(f"{dirname}/{name}/{count}.jpg", resized)
                 count += 1
             else:
                 print("Only 1 face per time")
+            # while len(bounding_box) > 0 and count < n_faces:
+            #     if len(bounding_box) == 1:
+            #         left, top, right, bottom = bb_coord(bounding_box[0])
+            #         crop = gray[top:bottom, left:right]
+            #         resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
+            #         cv2.imwrite(f"{dirname}/{name}/{count}.jpg", resized)
+            #         count += 1
+            #     else:
+            #         print("Only 1 face per time")
     cap.release()
     cv2.destroyAllWindows()
     return name
@@ -87,26 +100,38 @@ def add_faces(n_faces, dirname):
 def FIS(clf):
     hog = dlib.get_frontal_face_detector()
     cap = cv2.VideoCapture(0)  # ith webcam
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
-
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    status = True
     while True:
         ret, frame = cap.read()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         bounding_box = hog(gray, 0)
         for box in bounding_box:
+            status = False
             left, top, right, bottom = bb_coord(box)
             cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 2)
             crop = gray[top:bottom, left:right]
-            resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
-            temp = []
-            temp.append(resized)
-            fd = feature_descriptor(temp)
-            label = clf.predict(fd)
-            if len(bounding_box) > 0:
-                print(label)
-        flip_frame = cv2.flip(frame, 1)
-        cv2.imshow("Facial Identification System", flip_frame)
+            try:
+                resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
+                temp = [resized]
+                fd = feature_descriptor(temp)
+                label = clf.predict(fd)
+                if len(bounding_box) > 0:
+                    if not status:
+                        flip_frame = cv2.flip(frame, 1)
+                        x = width - int((right + left) / 2) - 250
+                        y = bottom
+                        cv2.putText(flip_frame, str(label), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255))
+                        cv2.imshow("Facial Identification System", flip_frame)
+            except:
+                status = True
+                break
+        if len(bounding_box) == 0:
+            status = True
+        if status:
+            flip_frame = cv2.flip(frame, 1)
+            cv2.imshow("Facial Identification System", flip_frame)
 
         key = cv2.waitKey(1)
         if key % 256 == 27:
@@ -164,14 +189,21 @@ def main():
     if args.type == 0:  # test
         clf = load_model('Model/FIS.sav')
         FIS(clf)
-    else:  # add a new guy and retrain
+    elif args.type == 1:  # add a new guy and retrain
         dirname = 'Dataset'
+        who = add_faces(10, dirname)
+        print(f"{who} has added faces to the Dataset")
+        # Train
+        if who != 'No one':
+            data, labels = load_dataset(dirname)
+            data_fd = feature_descriptor(data)
+            clf = train(data_fd, np.array(labels))
+            save_model(clf, 'FIS')
+    elif args.type == 2:
+        dirname = 'Test'
         add_faces(10, dirname)
-        # retrain
-        data, labels = load_dataset(dirname)
-        data_fd = feature_descriptor(data)
-        clf = train(data_fd, np.array(labels))
-        save_model(clf, 'FIS')
+    else:
+        print(f"Invalid parameter for type:{args.type} \nPlease search for help")
 
 
 if __name__ == '__main__':
