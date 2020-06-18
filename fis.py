@@ -1,3 +1,4 @@
+import argparse
 import os
 import pickle
 import warnings
@@ -7,8 +8,6 @@ import dlib
 import numpy as np
 from skimage.feature import hog
 from sklearn import svm
-
-import argparse
 
 parser = argparse.ArgumentParser(description='FIS')
 parser.add_argument('--type', type=int, default=0, help='0: FIS, 1: add a new guy and retrain')
@@ -90,34 +89,27 @@ def FIS(clf):
     cap = cv2.VideoCapture(0)  # ith webcam
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
-    result = None
 
     while True:
         ret, frame = cap.read()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         bounding_box = hog(gray, 0)
-
-        flip_frame = cv2.flip(frame, 1)
-        for ind, box in enumerate(bounding_box):
+        for box in bounding_box:
             left, top, right, bottom = bb_coord(box)
             cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 2)
-
             crop = gray[top:bottom, left:right]
             resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
-
-            fd_resize = hog(resized, orientations=9, pixels_per_cell=ppc, cells_per_block=cpb, visualize=False,
-                            multichannel=False)
-            fd_resize = np.array(fd_resize)
-            label = clf.predict(fd_resize)
-            print(type(label))
-            print(label)
-
-            # cv2.putText(flip_frame, label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1,
-            #             (0, 255, 255))
+            temp = []
+            temp.append(resized)
+            fd = feature_descriptor(temp)
+            label = clf.predict(fd)
+            if len(bounding_box) > 0:
+                print(label)
+        flip_frame = cv2.flip(frame, 1)
         cv2.imshow("Facial Identification System", flip_frame)
-        
+
         key = cv2.waitKey(1)
-        if key % 256 == 32:
+        if key % 256 == 27:
             break
 
     cap.release()
@@ -153,7 +145,7 @@ def feature_descriptor(data):
 
 
 def train(data_fd, labels):
-    clf = svm.SVC()
+    clf = svm.SVC(C=5, gamma=0.001)
     clf.fit(data_fd, labels)
     return clf
 
