@@ -98,6 +98,7 @@ def add_faces(n_faces, dirname):
 
 
 def FIS(clf):
+    print('Camera warming up...')
     hog = dlib.get_frontal_face_detector()
     cap = cv2.VideoCapture(0)  # ith webcam
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
