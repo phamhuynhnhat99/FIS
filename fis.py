@@ -7,9 +7,8 @@ import dlib
 import joblib
 import numpy as np
 from skimage.feature import hog
-from sklearn import svm
-from sklearn.metrics import accuracy_score
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.metrics import accuracy_score
 
 parser = argparse.ArgumentParser(description='FIS')
 parser.add_argument('--type', type=int, default=0, help='0: FIS, 1: add a new guy and retrain')
@@ -163,44 +162,62 @@ def feature_descriptor(data):
 
 
 def train(data_fd, labels):
-    clf = LDA(solver='eigen',shrinkage='auto')
-    #clf = svm.SVC(C=5.)
+    clf = LDA(solver='eigen', shrinkage='auto')
     clf.fit(data_fd, labels)
     return clf
 
 
 def save_model(model, name):
-    if not os.path.isdir("Model"):
+    path_parent = os.path.dirname(os.getcwd())
+    os.chdir(path_parent)
+    path = os.getcwd()
+    if not os.path.exists(f"{path}/Model"):
         os.mkdir("Model")
-    path = f"Model/{name}"
-    if os.path.exists(path):
+    model_path = f"{path}/Model/{name}"
+    if os.path.exists(model_path):
         print('Update Model')
-        os.remove(path)
-    joblib.dump(model, path)
-    print(f"Model has added {name}")
+        os.remove(model_path)
+    else:
+        print(f"Model has added {name}")
+    joblib.dump(model, model_path)
 
 
 def main():
     if args.type == 0:  # test
-        clf = load_model('Model/FIS_LDA')
         if args.name == 'evaluation':
             dirname = 'Test'
-            data, labels = load_dataset(dirname)
-            data_fd = feature_descriptor(data)
-            predict = []
-            for i in data_fd:
-                temp = str(clf.predict(i[np.newaxis]))
-                temp = temp[2:-2]
-                predict.append(temp)
-            print(f"Accuracy:{accuracy_score(labels, predict)}")
+            if os.path.exists(dirname):
+                data, labels = load_dataset(dirname)
+                data_fd = feature_descriptor(data)
+                predict = []
+                path_parent = os.path.dirname(os.getcwd())
+                os.chdir(path_parent)
+                path = os.getcwd()
+                name = 'FIS_LDA'
+                model_path = f"{path}/Model/{name}"
+                clf = load_model(model_path)
+                for i in data_fd:
+                    temp = str(clf.predict(i[np.newaxis]))
+                    temp = temp[2:-2]
+                    predict.append(temp)
+                print(f"Accuracy:{accuracy_score(labels, predict)}")
+            else:
+                print('No Test found')
         else:
+            path_parent = os.path.dirname(os.getcwd())
+            os.chdir(path_parent)
+            path = os.getcwd()
+            name = 'FIS_LDA'
+            model_path = f"{path}/Model/{name}"
+            clf = load_model(model_path)
             FIS(clf)
-    elif args.type == 1:  # add a new guy and retrain
+    elif args.type == 1:  # add and train
         dirname = 'Dataset'
         who = add_faces(20, dirname)
         print(f"{who} has added faces to the Dataset")
         # Train
         if who != 'No one':
+            print(f"Training with {who} added...")
             data, labels = load_dataset(dirname)
             data_fd = feature_descriptor(data)
             clf = train(data_fd, np.array(labels))
