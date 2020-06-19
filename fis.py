@@ -8,13 +8,14 @@ import dlib
 import numpy as np
 from skimage.feature import hog
 from sklearn import svm
+from sklearn.metrics import classification_report, accuracy_score
 
 parser = argparse.ArgumentParser(description='FIS')
 parser.add_argument('--type', type=int, default=0, help='0: FIS, 1: add a new guy and retrain')
 parser.add_argument('--name', type=str, default='Anonymous', help='name of new guy')
 args = parser.parse_args()
 
-# from sklearn.metrics import classification_report, accuracy_score
+
 
 warnings.filterwarnings('ignore')
 
@@ -199,6 +200,7 @@ def main():
                 temp = str(clf.predict(i[np.newaxis]))
                 temp = temp[2:-2]
                 predict.append(temp)
+            print(f"Accuracy:{accuracy_score(labels,predict)}")
         else:
             FIS(clf)
     elif args.type == 1:  # add a new guy and retrain
