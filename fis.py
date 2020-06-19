@@ -117,13 +117,14 @@ def FIS(clf):
                 resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
                 temp = [resized]
                 fd = feature_descriptor(temp)
-                label = clf.predict(fd)
+                label = str(clf.predict(fd))
+                label = label[2:-2]
                 if len(bounding_box) > 0:
                     if not status:
                         flip_frame = cv2.flip(frame, 1)
                         x = width - int((right + left) / 2) - 250
                         y = bottom
-                        cv2.putText(flip_frame, str(label), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255))
+                        cv2.putText(flip_frame, label, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255))
                         cv2.imshow("Facial Identification System", flip_frame)
             except:
                 status = True
@@ -189,7 +190,22 @@ def save_model(model, name):
 def main():
     if args.type == 0:  # test
         clf = load_model('Model/FIS.sav')
-        FIS(clf)
+        if args.name == 'evaluation':
+            dirname = 'Test'
+            data, labels = load_dataset(dirname)
+            data_fd = feature_descriptor(data)
+            predict = []
+            for i in data_fd:
+                temp = str(clf.predict(i[np.newaxis]))
+                temp = temp[2:-2]
+                predict.append(temp)
+
+            print(type(labels[0]))
+            print(type(predict[0]))
+            print(labels[0])
+            print(predict[0])
+        else:
+            FIS(clf)
     elif args.type == 1:  # add a new guy and retrain
         dirname = 'Dataset'
         who = add_faces(10, dirname)
