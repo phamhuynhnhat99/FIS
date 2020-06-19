@@ -199,11 +199,6 @@ def main():
                 temp = str(clf.predict(i[np.newaxis]))
                 temp = temp[2:-2]
                 predict.append(temp)
-
-            print(type(labels[0]))
-            print(type(predict[0]))
-            print(labels[0])
-            print(predict[0])
         else:
             FIS(clf)
     elif args.type == 1:  # add a new guy and retrain
