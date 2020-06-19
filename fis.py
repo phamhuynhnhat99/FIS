@@ -1,14 +1,15 @@
 import argparse
 import os
-import pickle
 import warnings
 
 import cv2
 import dlib
+import joblib
 import numpy as np
 from skimage.feature import hog
 from sklearn import svm
 from sklearn.metrics import accuracy_score
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
 parser = argparse.ArgumentParser(description='FIS')
 parser.add_argument('--type', type=int, default=0, help='0: FIS, 1: add a new guy and retrain')
@@ -82,15 +83,6 @@ def add_faces(n_faces, dirname):
                 count += 1
             else:
                 print("Only 1 face per time")
-            # while len(bounding_box) > 0 and count < n_faces:
-            #     if len(bounding_box) == 1:
-            #         left, top, right, bottom = bb_coord(bounding_box[0])
-            #         crop = gray[top:bottom, left:right]
-            #         resized = cv2.resize(crop, (64, 128), interpolation=cv2.INTER_AREA)
-            #         cv2.imwrite(f"{dirname}/{name}/{count}.jpg", resized)
-            #         count += 1
-            #     else:
-            #         print("Only 1 face per time")
     cap.release()
     cv2.destroyAllWindows()
     return name
@@ -144,7 +136,7 @@ def FIS(clf):
 
 def load_model(path):
     if os.path.exists(path):
-        model = pickle.load(open(path, 'rb'))
+        model = joblib.load(path)
         return model
     print("Model not found")
     return None
@@ -171,7 +163,8 @@ def feature_descriptor(data):
 
 
 def train(data_fd, labels):
-    clf = svm.SVC(C=5.)
+    clf = LDA(solver='eigen',shrinkage='auto')
+    #clf = svm.SVC(C=5.)
     clf.fit(data_fd, labels)
     return clf
 
@@ -179,16 +172,17 @@ def train(data_fd, labels):
 def save_model(model, name):
     if not os.path.isdir("Model"):
         os.mkdir("Model")
-    path = f"Model/{name}.sav"
+    path = f"Model/{name}"
     if os.path.exists(path):
+        print('Update Model')
         os.remove(path)
-    pickle.dump(model, open(path, 'wb'))
+    joblib.dump(model, path)
     print(f"Model has added {name}")
 
 
 def main():
     if args.type == 0:  # test
-        clf = load_model('Model/FIS.sav')
+        clf = load_model('Model/FIS_LDA')
         if args.name == 'evaluation':
             dirname = 'Test'
             data, labels = load_dataset(dirname)
@@ -203,17 +197,17 @@ def main():
             FIS(clf)
     elif args.type == 1:  # add a new guy and retrain
         dirname = 'Dataset'
-        who = add_faces(10, dirname)
+        who = add_faces(20, dirname)
         print(f"{who} has added faces to the Dataset")
         # Train
         if who != 'No one':
             data, labels = load_dataset(dirname)
             data_fd = feature_descriptor(data)
             clf = train(data_fd, np.array(labels))
-            save_model(clf, 'FIS')
+            save_model(clf, 'FIS_LDA')
     elif args.type == 2:
         dirname = 'Test'
-        add_faces(10, dirname)
+        add_faces(20, dirname)
     else:
         print(f"Invalid parameter for type:{args.type} \nPlease search for help")
 
