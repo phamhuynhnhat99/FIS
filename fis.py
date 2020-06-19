@@ -171,7 +171,7 @@ def feature_descriptor(data):
 
 
 def train(data_fd, labels):
-    clf = svm.SVC(C=5, gamma=0.001)
+    clf = svm.SVC(C=5.)
     clf.fit(data_fd, labels)
     return clf
 
